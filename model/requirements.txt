@@ -3,5 +3,5 @@ torchvision
 torchaudio
 opencv-python
 mediapipe
-sklearn
+scikit-learn
 matplotlib
