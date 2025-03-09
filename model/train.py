@@ -6,10 +6,18 @@ import time
 import mediapipe as mp
 import json
 import sys
+from multiprocessing import Pool
+
+
+
+KEYPTS_PATH = os.path.join(os.curdir, 'gen_keypoints_data')
+if not os.path.exists(KEYPTS_PATH):
+    os.makedirs(KEYPTS_PATH)
 
 mp_holistic = mp.solutions.holistic
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_drawing = mp.solutions.drawing_utils
+
 
 def mediapipe_detect(img, model):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -60,14 +68,13 @@ def train_video_orchestrator(dir):
         for line in class_file:
             if (len(line.split(maxsplit=1)) != 2):
                 sys.exit("Error using wlasl class list")
-            key, val = line.split(maxsplit=1)
-            word_class[int(key)] = val
+            val, key = line.split(maxsplit=1) #class number is val, and name of word is key
+            word_class[key.strip()] = str(val)
 
     # Open the JSON file
     with open(dir + '/WLASL_v0.3.json') as f:
         # Load the JSON data
         json_data = json.load(f)
-
     # Check if the data is a list of dictionaries
     if isinstance(json_data, list):
         # Convert the JSON array into individual dictionaries
@@ -75,57 +82,40 @@ def train_video_orchestrator(dir):
         
     else: # may break here.
         print("The JSON file does not contain an array.")
-
     # Trains per word, go to each 1+ instances
     for word in train_list:
         print("Training " + word['gloss'])
         for instance in word['instances']:
             if instance['video_id'] not in missing:
-                
                 with mp_holistic.Holistic(min_detection_confidence=0.5,min_tracking_confidence=0.5) as holistic:
                     cap = cv2.VideoCapture('training_data/videos/' + instance['video_id'] +  '.mp4')
+                    frame_count = 0
                     while cap.isOpened():
                         ret, frame = cap.read()
                         if not ret:
                             print("Ignoring empty camera frame.")
-                            # If loading a video, use 'break' instead of 'continue'.
-                            break
+                            break 
                         img, results = mediapipe_detect(frame, holistic)
-                        draw_landmarks(img, results)
-                        
-                        cv2.imshow('Cam Feed', img)
+                        frame_count += 1
 
+                        #Showing, not neccesary when training
+                        # draw_landmarks(img, results)
+                        # cv2.imshow('Cam Feed', img)
+
+                        #Saving keypoints:
+                        keypts = get_keypts(results)
+                        numpy_path = os.path.join(KEYPTS_PATH, word_class[str(word['gloss'])], str(instance['video_id']), str(frame_count))
+                        if not os.path.exists(numpy_path):
+                            os.makedirs(numpy_path)
+                            np.save(numpy_path, keypts)
        
                         if (cv2.waitKey(1) & 0xFF == ord('q')):
                             continue
-
+    
+    
     
     cv2.destroyAllWindows()
     cap.release()
-
-
-
-
-    
-    # cap = cv2.VideoCapture('training_data/videos/sample_video.mp4')
-
-# with mp_holistic.Holistic(min_detection_confidence=0.5,min_tracking_confidence=0.5) as holistic:
-#     while cap.isOpened():
-#         ret, frame = cap.read()
-#         img, results = mediapipe_detect(frame, holistic)
-#         draw_landmarks(img, results)
-        
-#         cv2.imshow('Cam Feed', img)
-
-#         if not ret:
-#             print("Ignoring empty camera frame.")
-#             # If loading a video, use 'break' instead of 'continue'.
-#             break
-#         if (cv2.waitKey(30) & 0xFF == ord('q')):
-#             cv2.destroyAllWindows()
-#             cap.release()
-#             break
-
 
 
     
