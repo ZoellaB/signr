@@ -7,6 +7,8 @@ import mediapipe as mp
 import json
 import sys
 from multiprocessing import Process
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.utils import to_categorical
 
 mp_holistic = mp.solutions.holistic
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -107,8 +109,8 @@ def get_keypts_orchestrator(start=0):
                         frame_count += 1
 
                         #Showing, not neccesary when training
-                        # draw_landmarks(img, results)
-                        # cv2.imshow('Cam Feed', img)
+                        draw_landmarks(img, results)
+                        cv2.imshow('Cam Feed', img)
 
                         #Saving keypoints:
                         keypts = get_keypts(results)
@@ -125,26 +127,60 @@ def get_keypts_orchestrator(start=0):
     cv2.destroyAllWindows()
     
 
-# if __name__ == '__main__':
-#     p = Process(target=get_keypts_orchestrator,  args=(1226,)) #stopped at 411 309 68 87 157 180 689 122 1228
-#     p.start()
-#     p.join()
+if __name__ == '__main__':
+    p = Process(target=get_keypts_orchestrator) #stopped at 411 309 68 87 157 180 689 122 1228
+    p.start()
+    p.join()
 
 
-from sklearn.model_selection import train_test_split
-# from tensorflow.keras.utils import to_categorical
-class_word = {}
-with open("training_data" + "/wlasl_class_list.txt") as class_file:
-    for line in class_file:
-        if (len(line.split(maxsplit=1)) != 2):
-            sys.exit("Error using wlasl class list")
-        key, val = line.split(maxsplit=1) #class number is val, and name of word is key
-        class_word[key.strip()] = str(val)
 
-print(class_word)
+# class_word = {}
+# with open("training_data" + "/wlasl_class_list.txt") as class_file:
+#     for line in class_file:
+#         if (len(line.split(maxsplit=1)) != 2):
+#             sys.exit("Error using wlasl class list")
+#         key, val = line.split(maxsplit=1) #class number is val, and name of word is key
+#         class_word[key.strip()] = str(val)
+
+# print(class_word)
 
 
     
+# sequences, labels = [], []
+# for action in actions:
+#     for sequence in range(no_sequences):
+#         window = []
+#         for frame_num in range(sequence_length):
+#             res = np.load(os.path.join(DATA_PATH, action, str(sequence), "{}.npy".format(frame_num)))
+#             window.append(res)
+#         sequences.append(window)
+#         labels.append(label_map[action])
+# np.array(sequences).shape
+# np.array(labels).shape
+# X = np.array(sequences)
 
 
+# X.shape
+# y = to_categorical(labels).astype(int)
 
+# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.05)
+# y_test.shape
+
+# from tensorflow.keras.models import Sequential
+# from tensorflow.keras.layers import LSTM, Dense
+# from tensorflow.keras.callbacks import TensorBoard
+# log_dir = os.path.join('Logs')
+# tb_callback = TensorBoard(log_dir=log_dir)
+
+# model = Sequential()
+# model.add(LSTM(64, return_sequences=True, activation='relu', input_shape=(30,1662)))
+# model.add(LSTM(128, return_sequences=True, activation='relu'))
+# model.add(LSTM(64, return_sequences=False, activation='relu'))
+# model.add(Dense(64, activation='relu'))
+# model.add(Dense(32, activation='relu'))
+# model.add(Dense(actions.shape[0], activation='softmax'))
+# res = [.7, 0.2, 0.1]
+# actions[np.argmax(res)]
+# model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+# model.fit(X_train, y_train, epochs=2000, callbacks=[tb_callback])
+# model.summary()
