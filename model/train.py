@@ -132,9 +132,16 @@ def get_keypts_orchestrator(start=0):
 
 
 from sklearn.model_selection import train_test_split
-from tensorflow.keras.utils import to_categorical
-label_map = {label:num for num, label in enumerate(actions)}
+# from tensorflow.keras.utils import to_categorical
+class_word = {}
+with open("training_data" + "/wlasl_class_list.txt") as class_file:
+    for line in class_file:
+        if (len(line.split(maxsplit=1)) != 2):
+            sys.exit("Error using wlasl class list")
+        key, val = line.split(maxsplit=1) #class number is val, and name of word is key
+        class_word[key.strip()] = str(val)
 
+print(class_word)
 
 
     
