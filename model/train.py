@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 import time
 import mediapipe as mp
 import json
-
+import sys
 
 mp_holistic = mp.solutions.holistic
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -20,8 +20,8 @@ def mediapipe_detect(img, model):
     return img, results
 
 def draw_landmarks(img, results):
-    mp_drawing.draw_landmarks(img, results.face_landmarks, mp_holistic.FACEMESH_TESSELATION, mp_drawing.DrawingSpec(color=(0,255,0), thickness=1, circle_radius=3))
-    mp_drawing.draw_landmarks(img, results.pose_landmarks, mp_holistic.POSE_CONNECTIONS,  mp_drawing.DrawingSpec(color=(128,0,128), thickness=5, circle_radius=5), mp_drawing.DrawingSpec(color=(0,255,0), thickness=3, circle_radius=3))
+    mp_drawing.draw_landmarks(img, results.face_landmarks, mp_holistic.FACEMESH_TESSELATION, mp_drawing.DrawingSpec(color=(0,255,0), thickness=1, circle_radius=2))
+    mp_drawing.draw_landmarks(img, results.pose_landmarks, mp_holistic.POSE_CONNECTIONS,  mp_drawing.DrawingSpec(color=(128,0,128), thickness=1, circle_radius=2), mp_drawing.DrawingSpec(color=(0,255,0), thickness=1, circle_radius=2))
     mp_drawing.draw_landmarks(img, results.left_hand_landmarks, mp_holistic.HAND_CONNECTIONS)
     mp_drawing.draw_landmarks(img, results.right_hand_landmarks, mp_holistic.HAND_CONNECTIONS)
 
@@ -51,15 +51,61 @@ def get_keypts(results):
 
 def train_video_orchestrator(dir):
 
+    #Save missing video instances
     missing = open(dir + "/missing.txt").readlines()
 
+    #Save word classification from 0-1999 as dict
+    word_class = {}
+    with open(dir + "/wlasl_class_list.txt") as class_file:
+        for line in class_file:
+            if (len(line.split(maxsplit=1)) != 2):
+                sys.exit("Error using wlasl class list")
+            key, val = line.split(maxsplit=1)
+            word_class[int(key)] = val
+
+    # Open the JSON file
     with open(dir + '/WLASL_v0.3.json') as f:
-        print(f)
-        d = f[0]
-        print(d)
-        print(d[0])
+        # Load the JSON data
+        json_data = json.load(f)
+
+    # Check if the data is a list of dictionaries
+    if isinstance(json_data, list):
+        # Convert the JSON array into individual dictionaries
+        train_list = [dict(item) for item in json_data if isinstance(item, dict)]
+        
+    else: # may break here.
+        print("The JSON file does not contain an array.")
+
+    # Trains per word, go to each 1+ instances
+    for word in train_list:
+        print("Training " + word['gloss'])
+        for instance in word['instances']:
+            if instance['video_id'] not in missing:
+                
+                with mp_holistic.Holistic(min_detection_confidence=0.5,min_tracking_confidence=0.5) as holistic:
+                    cap = cv2.VideoCapture('training_data/videos/' + instance['video_id'] +  '.mp4')
+                    while cap.isOpened():
+                        ret, frame = cap.read()
+                        if not ret:
+                            print("Ignoring empty camera frame.")
+                            # If loading a video, use 'break' instead of 'continue'.
+                            break
+                        img, results = mediapipe_detect(frame, holistic)
+                        draw_landmarks(img, results)
+                        
+                        cv2.imshow('Cam Feed', img)
+
+       
+                        if (cv2.waitKey(1) & 0xFF == ord('q')):
+                            continue
 
     
+    cv2.destroyAllWindows()
+    cap.release()
+
+
+
+
     
     # cap = cv2.VideoCapture('training_data/videos/sample_video.mp4')
 
