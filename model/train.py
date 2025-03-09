@@ -6,13 +6,7 @@ import time
 import mediapipe as mp
 import json
 import sys
-from multiprocessing import Pool
-
-
-
-KEYPTS_PATH = os.path.join(os.curdir, 'gen_keypoints_data')
-if not os.path.exists(KEYPTS_PATH):
-    os.makedirs(KEYPTS_PATH)
+from multiprocessing import Process
 
 mp_holistic = mp.solutions.holistic
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -57,7 +51,13 @@ def get_keypts(results):
     rh = np.array([[res.x, res.y, res.z] for res in results.right_hand_landmarks.landmark]).flatten() if results.right_hand_landmarks else np.zeros(21*3)
     return np.concatenate([pose, face, lh, rh])
 
-def train_video_orchestrator(dir):
+def get_keypts_orchestrator(start=0):
+    dir = "training_data"
+    KEYPTS_PATH = os.path.join(os.curdir, 'gen_keypoints_data')
+    if not os.path.exists(KEYPTS_PATH):
+        os.makedirs(KEYPTS_PATH)
+    word_count=0
+
 
     #Save missing video instances
     missing = open(dir + "/missing.txt").readlines()
@@ -84,8 +84,16 @@ def train_video_orchestrator(dir):
         print("The JSON file does not contain an array.")
     # Trains per word, go to each 1+ instances
     for word in train_list:
+        if(word_count < start):
+            word_count += 1
+            continue
+        word_count += 1
         print("Training " + word['gloss'])
         for instance in word['instances']:
+            try: 
+                os.makedirs(os.path.join(KEYPTS_PATH, word_class[str(word['gloss'])], str(instance['video_id'])))
+            except:
+                pass
             if instance['video_id'] not in missing:
                 with mp_holistic.Holistic(min_detection_confidence=0.5,min_tracking_confidence=0.5) as holistic:
                     cap = cv2.VideoCapture('training_data/videos/' + instance['video_id'] +  '.mp4')
@@ -104,20 +112,32 @@ def train_video_orchestrator(dir):
 
                         #Saving keypoints:
                         keypts = get_keypts(results)
-                        numpy_path = os.path.join(KEYPTS_PATH, word_class[str(word['gloss'])], str(instance['video_id']), str(frame_count))
+                        numpy_path = os.path.join(KEYPTS_PATH, word_class[str(word['gloss'])], str(instance['video_id']),str(frame_count))
                         if not os.path.exists(numpy_path):
-                            os.makedirs(numpy_path)
                             np.save(numpy_path, keypts)
        
                         if (cv2.waitKey(1) & 0xFF == ord('q')):
                             continue
+                    cap.release()
     
     
     
     cv2.destroyAllWindows()
-    cap.release()
+    
+
+# if __name__ == '__main__':
+#     p = Process(target=get_keypts_orchestrator,  args=(1226,)) #stopped at 411 309 68 87 157 180 689 122 1228
+#     p.start()
+#     p.join()
+
+
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.utils import to_categorical
+label_map = {label:num for num, label in enumerate(actions)}
+
 
 
     
-train_video_orchestrator("training_data")
+
+
 
