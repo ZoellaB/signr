@@ -1,3 +1,4 @@
 /.DS_Store
 /training_data
 /gen_keypoints_data
+.vscode/launch.json
