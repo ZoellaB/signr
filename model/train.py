@@ -139,7 +139,8 @@ if not os.path.exists(KEYPTS_PATH):
     print("hey")
 
 def main():
-    wc = 
+    wc = #MANAGER
+    missing = Array('i', lock=False)
     tl = Array('c', lock=False)
 
     pool = Pool(initializer=init_non_iter)
