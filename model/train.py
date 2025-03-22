@@ -8,7 +8,7 @@ import json
 import sys
 from multiprocessing import Pool, Manager, Array
 # from sklearn.model_selection import train_test_split
-from itertools import product
+from shared_memory_dict import SharedMemoryDict
     
 mp_holistic = mp.solutions.holistic
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -17,6 +17,10 @@ TRAIN_DIR = "training_data"
 GEN_DIR = 'gen_keypoints_data'
 START = 0
 KEYPTS_PATH = os.path.join(os.curdir, GEN_DIR)
+word_class = SharedMemoryDict(name='tokens', size=512)
+missing = []
+tl = []
+
 
 def mediapipe_detect(img, model):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -58,7 +62,6 @@ def get_keypts(results):
 
 def get_word_classification(dir):
     #Save word classification from 0-1999 as dict
-    word_class = {}
     with open(TRAIN_DIR + dir) as class_file:
         for line in class_file:
             if (len(line.split(maxsplit=1)) != 2):
@@ -68,9 +71,8 @@ def get_word_classification(dir):
     return word_class
 
 def get_missing_vids(miss_dir):
-    missing = []
-    #Save missing video instances
-    missing = open(TRAIN_DIR + miss_dir).readlines()
+    missing = Array('i', size_or_initializer=2000, lock=False)
+    missing = open(TRAIN_DIR + miss_dir).readlines()  #Save missing video instances
     return missing
 
 def get_vid_metadata(dir):
@@ -89,13 +91,7 @@ def get_vid_metadata(dir):
 
     return train_list
 
-    
 
-def init_non_iter():
-    word_class = get_word_classification("/wlasl_class_list.txt")
-    missing = get_missing_vids("/missing.txt")
-    tl = get_vid_metadata("/WLASL_v0.3.json")
-    print("done making dicts lists")
 
 def get_keypts_orchestrator(train_list):
     # Trains per word, go to each 1+ instances
@@ -139,19 +135,24 @@ if not os.path.exists(KEYPTS_PATH):
     print("hey")
 
 def main():
-    wc = #MANAGER
-    missing = Array('i', lock=False)
+
+    
     tl = Array('c', lock=False)
 
-    pool = Pool(initializer=init_non_iter)
-    
-    print("way")
-    pool.imap_unordered(get_keypts_orchestrator, tl)
-    print("ney")
+    word_class = get_word_classification("/wlasl_class_list.txt")
+    missing = get_missing_vids("/missing.txt")
+    tl = get_vid_metadata("/WLASL_v0.3.json")
+
+    pool = Pool()
+    with Pool() as pool:
+        print("way")
+        pool.imap_unordered(get_keypts_orchestrator, [(i, tl) for i in range(len(tl))])
+        print("ney")
 
 if __name__ == '__main__':
     main()
 
-
+word_class.shm.close()
+word_class.shm.unlink()
 
     
