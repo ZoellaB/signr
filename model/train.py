@@ -95,13 +95,12 @@ def get_keypts_orchestrator(word):
     # Trains per word, go to each 1+ instances
     print("Training " + word['gloss'])
     for instance in word['instances']:
-        try: 
-            os.makedirs(os.path.join(KEYPTS_PATH, word_class[str(word['gloss'])]))
-        except:
-            pass
-
         if instance['video_id'] not in missing:
-            os.makedirs(os.path.join(KEYPTS_PATH, word_class[str(word['gloss'])], str(instance['video_id'])))
+            try: 
+                os.makedirs(os.path.join(KEYPTS_PATH, word_class[str(word['gloss'])], str(instance['video_id'])))
+            except:
+                pass
+
             with mp_holistic.Holistic(min_detection_confidence=0.5,min_tracking_confidence=0.5) as holistic:
                 cap = cv2.VideoCapture('training_data/videos/' + instance['video_id'] +  '.mp4')
                 frame_count = 0
@@ -127,7 +126,6 @@ def get_keypts_orchestrator(word):
                         continue
                 cap.release()
     cv2.destroyAllWindows()
-
 
 def init_worker(wc_dir, missword_dir):
     global word_class, missing
