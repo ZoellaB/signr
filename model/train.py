@@ -17,10 +17,7 @@ TRAIN_DIR = "training_data"
 GEN_DIR = 'gen_keypoints_data'
 START = 0
 KEYPTS_PATH = os.path.join(os.curdir, GEN_DIR)
-word_class = SharedMemoryDict(name='tokens', size=512)
-missing = []
-tl = []
-
+word_class = SharedMemoryDict(name='tokens',size=2048)
 
 def mediapipe_detect(img, model):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -62,6 +59,7 @@ def get_keypts(results):
 
 def get_word_classification(dir):
     #Save word classification from 0-1999 as dict
+    
     with open(TRAIN_DIR + dir) as class_file:
         for line in class_file:
             if (len(line.split(maxsplit=1)) != 2):
@@ -76,7 +74,8 @@ def get_missing_vids(miss_dir):
     return missing
 
 def get_vid_metadata(dir):
-    train_list = []
+    train_list = Array('c',size_or_initializer=2000, lock=False)
+    
     # Open the JSON file
     with open(TRAIN_DIR + dir) as f:
         # Load the JSON data
@@ -89,9 +88,8 @@ def get_vid_metadata(dir):
     else: # may break here.
         print("The JSON file does not contain an array.")
 
+    print(len(train_list))
     return train_list
-
-
 
 def get_keypts_orchestrator(train_list):
     # Trains per word, go to each 1+ instances
@@ -137,7 +135,6 @@ if not os.path.exists(KEYPTS_PATH):
 def main():
 
     
-    tl = Array('c', lock=False)
 
     word_class = get_word_classification("/wlasl_class_list.txt")
     missing = get_missing_vids("/missing.txt")
@@ -154,5 +151,3 @@ if __name__ == '__main__':
 
 word_class.shm.close()
 word_class.shm.unlink()
-
-    
