@@ -7,15 +7,16 @@ import mediapipe as mp
 import json
 import sys
 from multiprocessing import Pool
+import config
 # from sklearn.model_selection import train_test_split
     
 mp_holistic = mp.solutions.holistic
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_drawing = mp.solutions.drawing_utils
-TRAIN_DIR = "training_data"
-GEN_DIR = 'gen_keypoints_data'
-START = 0
-KEYPTS_PATH = os.path.join(os.curdir, GEN_DIR)
+TRAIN_DIR = config.TRAIN_DIR
+GEN_DIR = config.GEN_DIR
+START = config.START
+KEYPTS_PATH = config.KEYPTS_PATH
 
 word_class = None
 missing = None
@@ -71,7 +72,8 @@ def get_word_classification(dir):
 
 def get_missing_vids(miss_dir):
     miss = []
-    miss = open(TRAIN_DIR + miss_dir).readlines()  #Save missing video instances
+    miss = open(TRAIN_DIR + miss_dir).readlines() 
+     #Save missing video instances
     return miss
 
 def get_vid_metadata(dir):
