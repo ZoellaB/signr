@@ -8,3 +8,4 @@ keras==3.3.3
 tensorflow==2.17
 opencv-python
 shared-memory-dict
+np_utils
